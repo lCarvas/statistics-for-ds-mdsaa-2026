@@ -1,0 +1,183 @@
+---
+title: "Boston Housing Price Analysis"
+author: "Group 3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(patchwork)
+library(GGally)
+library(broom)
+library(car)
+library(lmtest)
+library(sandwich)
+theme_set(theme_minimal(base_size = 14))
+```
+
+This project aims to investigate what factors influence house prices in Boston. A multiple linear regression model is used to explore the relationship between median house price (`MEDV`) and selected housing and environmental characteristics.
+
+---
+
+```{r loading data}
+boston <- read.csv("C:/Users/carva/Downloads/boston.csv")
+str(boston)
+summary(boston)
+```
+
+```{r clean-data}
+# Check missing values
+colSums(is.na(boston))
+```
+
+---
+
+## Exploratory Data Analysis – Numerical Variables
+### CRIM (Crime rate per capita)
+```{r eda-crim}
+ggplot(boston, aes(x = CRIM)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of CRIM")
+```
+
+### ZN (proportion of residential land zoned for lots over 25,000 sq.ft.)
+```{r eda-zn}
+ggplot(boston, aes(x = ZN)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of ZN")
+```
+
+### INDUS (proportion of non-retail business acres per town)
+```{r eda-indus}
+ggplot(boston, aes(x = INDUS)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of INDUS")
+```
+
+### CHAS (Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+```{r eda-chas}
+ggplot(boston, aes(x = CHAS)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of CHAS")
+```
+
+### NOX (nitric oxides concentration (parts per 10 million))
+```{r eda-nox}
+ggplot(boston, aes(x = NOX)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of NOX")
+```
+
+### RM (Number of Rooms)
+```{r eda-rm}
+ggplot(boston, aes(x = RM)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of Number of Rooms")
+```
+
+### AGE (proportion of owner-occupied units built prior to 1940)
+```{r eda-age}
+ggplot(boston, aes(x = AGE)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of AGE")
+```
+
+### DIS (weighted distances to five Boston employment centres)
+```{r eda-dis}
+ggplot(boston, aes(x = DIS)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of DIS")
+```
+
+### RAD (index of accessibility to radial highways)
+```{r eda-rad}
+ggplot(boston, aes(x = RAD)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of RAD")
+```
+
+### TAX (full-value property-tax rate per $10,000)
+```{r eda-tas}
+ggplot(boston, aes(x = TAX)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of TAX")
+```
+
+### PTRATIO (Pupil-Teacher Ratio)
+```{r eda-ptratio}
+ggplot(boston, aes(x = PTRATIO)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of PTRATIO")
+```
+
+### B (B=1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town)
+```{r eda-b}
+ggplot(boston, aes(x = B)) +
+  geom_histogram(bins = 20, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of B")
+```
+
+### LSTAT (Lower Status %)
+```{r eda-lstat}
+ggplot(boston, aes(x = LSTAT)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of LSTAT")
+```
+
+### MEDV (House Price)
+```{r eda-medv}
+ggplot(boston, aes(x = MEDV)) +
+  geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+  labs(title = "Distribution of Median House Prices")
+```
+
+---
+
+## Model Building – Linear Regression
+
+```{r model-fit}
+model1 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT, data=boston)
+summary(model1)
+```
+
+---
+
+## Model Diagnostics
+
+### Multicollinearity (VIF)
+```{r vif}
+vif(model1)
+```
+
+### Heteroskedasticity – Breusch-Pagan Test
+```{r heteroskedasticity}
+bptest(model1)
+```
+
+### Heteroskedasticity – Robust Scaling
+```{r Robust Scaling}
+coeftest(model1, vcov = vcovHC(model1))
+```
+
+### Linearity – RESET Test
+```{r reset}
+resetReg1 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + RM + AGE + DIS + RAD + TAX + PTRATIO + B + LSTAT + I(fitted(model1)^2) + I(fitted(model1)^3), data=boston)
+
+waldtest(model1, resetReg1, vcov = vcovHC(resetReg1, type = "HC0"))
+```
+
+### Respecification
+```{r respecification}
+model2 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + I(NOX^2) + RM + I(RM^2) + AGE + DIS + I(DIS^2) + RAD + TAX + PTRATIO + B + LSTAT + I(LSTAT^2) , data=boston)
+summary(model2)
+
+bptest(model2)
+bptest(model2, ~ fitted(model2) + I(fitted(model2)^2))
+
+coeftest(model2, vcov = vcovHC(model2))
+
+
+resetReg2 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + I(NOX^2) + RM + I(RM^2) + AGE + DIS + I(DIS^2) + RAD + TAX + PTRATIO + B + LSTAT + I(LSTAT^2) + I(fitted(model2)^2) + I(fitted(model2)^3), data=boston)
+
+waldtest(model2, resetReg2, vcov = vcovHC(resetReg2, type = "HC0"))
+```

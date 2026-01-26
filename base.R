@@ -66,7 +66,7 @@ ggplot(audi, aes(x = log(mpg), y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "mpg vs price")
 
-ggplot(audi, aes(x = log(engineSize), y = log(price))) +
+ggplot(audi, aes(x = engineSize, y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "engineSize vs price")
 
@@ -78,10 +78,9 @@ audi$diesel = as.integer(audi$fuelType=="Diesel")
 audi$petrol = as.integer(audi$fuelType=="Petrol")
 
 # LMS
-model_base <- lm(log(price) ~ year + 
-                              mileage + 
+model_base <- lm(log(price) ~ mileage + 
                               tax + 
-                              mpg + 
+                              log(mpg) + 
                               engineSize + 
                               manual+
                               automatic + 
@@ -93,15 +92,30 @@ summary(model_base)
 # Multicollinearity (VIF)
 vif(model_base) >= (1/(1-summary(model_base)$r.squared))
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # rerun
-model_base <- lm(log(price) ~ year + 
-                              mileage + 
+model_base <- lm(log(price) ~ mileage + 
                               tax + 
-                              mpg + 
-                              engineSize + 
+                              log(mpg) + 
+                              #engineSize + 
                               manual+
                               automatic + 
-                              diesel,
+                              diesel +
+                              I(tax^2) +
+                              I(engineSize^2),
                  data=audi)
 summary(model_base)
 vif(model_base) >= (1/(1-summary(model_base)$r.squared))
@@ -111,37 +125,27 @@ vif(model_base) >= (1/(1-summary(model_base)$r.squared))
 bptest(model_base)
 # we reject so there is heteroskedasticity
 coeftest(model_base, vcov = vcovHC(model_base))
-# redone
-model_base <- lm(log(price) ~ year + 
-                   mileage + 
-                   tax + 
-                   mpg + 
-                   engineSize + 
-                   manual,
-                 data=audi)
-coeftest(model_base, vcov = vcovHC(model_base))
-
 
 # RESET
-resetReg <- lm(log(price) ~ year + 
-                            mileage + 
+resetReg <- lm(log(price) ~ mileage + 
                             tax + 
-                            mpg + 
-                            engineSize + 
+                            log(mpg) + 
+                            #engineSize + 
                             manual +
+                            automatic +
+                            diesel +
+                            I(tax^2) +
+                            I(engineSize^2) +
                             I(fitted(model_base)^2) +
                             I(fitted(model_base)^3),
                 data=audi)
-# resettest(model_base) # smaller but less detailed
 waldtest(model_base, resetReg, vcov = vcovHC(resetReg, type = "HC0"))
 
 
 
-# TODO FIX N DONE
-#summary(model2)
-#bptest(model2)
-#bptest(model2, ~ fitted(model2) + I(fitted(model2)^2))
-#coeftest(model2, vcov = vcovHC(model2))
-#resetReg2 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + I(NOX^2) + RM + I(RM^2) + AGE + DIS + I(DIS^2) + RAD + TAX + PTRATIO + B + LSTAT + I(LSTAT^2) + I(fitted(model2)^2) + I(fitted(model2)^3), data=boston)
-#waldtest(model2, resetReg2, vcov = vcovHC(resetReg2, type = "HC0"))
+
+
+
+
+
 

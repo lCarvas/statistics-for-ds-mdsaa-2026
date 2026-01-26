@@ -49,23 +49,23 @@ ggplot(audi, aes(x = price)) +
   labs(title = "Distribution of price")
 
 # viz viz 2
-ggplot(audi, aes(x = year, y = price)) +
+ggplot(audi, aes(x = year, y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "year vs price")
 
-ggplot(audi, aes(x = mileage, y = price)) +
+ggplot(audi, aes(x = mileage, y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "mileage vs price")
 
-ggplot(audi, aes(x = tax, y = price)) +
+ggplot(audi, aes(x = tax, y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "tax vs price")
 
-ggplot(audi, aes(x = mpg, y = price)) +
+ggplot(audi, aes(x = log(mpg), y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "mpg vs price")
 
-ggplot(audi, aes(x = engineSize, y = price)) +
+ggplot(audi, aes(x = log(engineSize), y = log(price))) +
   geom_point(color = "#69b3a2") +
   labs(title = "engineSize vs price")
 
@@ -113,14 +113,14 @@ vif(model_base)
 ### Heteroskedasticity – Breusch-Pagan Test # drop before or after 
 # does it matter for dummies?
 model_base <- lm(log(price) ~ year + 
-                   mileage + 
-                   tax + 
-                   mpg + 
-                   engineSize + 
-                   manual,
+                              mileage + 
+                              tax + 
+                              mpg + 
+                              engineSize + 
+                              manual,
                  data=audi)
 summary(model_base)
-bptest(model_base) # good
+bptest(model_base) # TODO BAD
 
 
 # RESET
@@ -140,7 +140,16 @@ linearHypothesis(resetReg, matchCoefs(resetReg,"fitted"))
 
 # TODO FIX N DONE
 
-#model2 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + I(NOX^2) + RM + I(RM^2) + AGE + DIS + I(DIS^2) + RAD + TAX + PTRATIO + B + LSTAT + I(LSTAT^2) , data=boston)
+model_base <- lm(log(price) ~ 
+                   year + 
+                   mileage + 
+                   tax + 
+                   mpg + 
+                   engineSize + 
+                   manual,
+                 data=audi)
+summary(model_base)
+bptest(model_base)
 #summary(model2)
 #bptest(model2)
 #bptest(model2, ~ fitted(model2) + I(fitted(model2)^2))
@@ -148,6 +157,6 @@ linearHypothesis(resetReg, matchCoefs(resetReg,"fitted"))
 #resetReg2 <- lm(log(MEDV) ~ CRIM + ZN + INDUS + CHAS + NOX + I(NOX^2) + RM + I(RM^2) + AGE + DIS + I(DIS^2) + RAD + TAX + PTRATIO + B + LSTAT + I(LSTAT^2) + I(fitted(model2)^2) + I(fitted(model2)^3), data=boston)
 #waldtest(model2, resetReg2, vcov = vcovHC(resetReg2, type = "HC0"))
 
-
-
+# HUH?
+coeftest(model_base, vcov = vcovHC(model_base))
 

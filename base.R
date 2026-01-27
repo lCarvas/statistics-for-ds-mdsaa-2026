@@ -10,7 +10,7 @@ str(audi)
 summary(audi)
 
 # Check missing values
-colSums(is.na(audi))
+colSums(is.na(audi))           
 
 # viz viz
 ggplot(audi, aes(x = year)) +
@@ -79,73 +79,67 @@ audi$petrol = as.integer(audi$fuelType=="Petrol")
 
 # LMS
 model_base <- lm(log(price) ~ mileage + 
-                              tax + 
-                              log(mpg) + 
-                              engineSize + 
-                              manual+
-                              automatic + 
-                              petrol +
-                              diesel,
+                   tax + 
+                   log(mpg) + 
+                   engineSize + 
+                   manual+
+                   automatic + 
+                   petrol +
+                   diesel,
                  data=audi)
 summary(model_base)
+# fit an OLS model with log(price) as the dependent variable and the listed regressors.
+# summary() shows coefficients, standard errors, t-values, p-values, R-squared, etc.
 
 # Multicollinearity (VIF)
 vif(model_base) >= (1/(1-summary(model_base)$r.squared))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# calculate VIF for each predictor to detect multicollinearity.
+# The right-hand expression (1/(1-R^2)) gives the threshold
 
 # rerun
 model_base <- lm(log(price) ~ mileage + 
-                              tax + 
-                              log(mpg) + 
-                              #engineSize + 
-                              manual+
-                              automatic + 
-                              diesel +
-                              I(tax^2) +
-                              I(engineSize^2),
+                   tax + 
+                   log(mpg) + 
+                   #engineSize + # i forgot why we remove engineSize here, ask yehor
+                   manual+
+                   automatic + 
+                   diesel +
+                   I(tax^2) +
+                   I(engineSize^2),
                  data=audi)
 summary(model_base)
-vif(model_base) >= (1/(1-summary(model_base)$r.squared))
 
+vif(model_base) >= (1/(1-summary(model_base)$r.squared))
+# re check vif on the updated model.
 
 # Heteroskedasticity – Breusch-Pagan Test
 bptest(model_base)
+# bp test checks for heteroskedasticity.
+# the null hypothesis is homoskedasticity.
 # we reject so there is heteroskedasticity
+
 coeftest(model_base, vcov = vcovHC(model_base))
+# bp test indicates heteroskedasticity, use robust standard errors.
+# coeftest() with vcovHC() displays coefficient estimates with robust se.
 
 # RESET
 resetReg <- lm(log(price) ~ mileage + 
-                            tax + 
-                            log(mpg) + 
-                            #engineSize + 
-                            manual +
-                            automatic +
-                            diesel +
-                            I(tax^2) +
-                            I(engineSize^2) +
-                            I(fitted(model_base)^2) +
-                            I(fitted(model_base)^3),
-                data=audi)
+                 tax + 
+                 log(mpg) + 
+                 #engineSize + 
+                 manual +
+                 automatic +
+                 diesel +
+                 I(tax^2) +
+                 I(engineSize^2) +
+                 I(fitted(model_base)^2) +
+                 I(fitted(model_base)^3),
+               data=audi)
+# reset test to check for model misspecification, if h0 rejected, we should add 
+# nonlinear functions of the regressors (squared, cubes, log, idk)
+
 waldtest(model_base, resetReg, vcov = vcovHC(resetReg, type = "HC0"))
-
-
-
-
-
-
-
-
-
+# wald test instead of reset to account for heteroskedasticity 
+# (they're the same test effectively [im, pretty sure])
+# compare original model to augmented one. if h0 rejected, aka the fitted^2 and 
+# fitted^3 are jointly significant, model is misspecified 

@@ -12,6 +12,7 @@ library(sandwich)
 
 # File
 audi <- read.csv("data_group_13.csv")
+save(audi, file = "data_group_13.RData")
 str(audi)
 summary(audi)
 
